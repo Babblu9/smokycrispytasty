@@ -14,13 +14,13 @@ import { loadRecipes, searchRecipes, type Card } from "@/lib/recipes";
 import { getMealById } from "@/lib/mealdb";
 import { ratingFor, caloriesFor } from "@/lib/cookora";
 import { generateRecipe } from "@/lib/ai";
-import { saveGeneratedRecipe } from "@/store/generatedRecipes";
-import type { Recipe } from "@/types";
+import { saveGeneratedRecipe, getAllSavedRecipes } from "@/store/generatedRecipes";
+import type { Recipe, CookStep } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Page =
   | "home" | "recipes" | "ai-chef" | "community" | "premium"
-  | "login" | "signup" | "recipe-detail" | "profile" | "settings" | "onboarding";
+  | "login" | "signup" | "recipe-detail" | "cook" | "profile" | "settings" | "onboarding";
 
 // ─── Image catalog ────────────────────────────────────────────────────
 const IMG = {
@@ -289,38 +289,25 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ─── HOME PAGE ────────────────────────────────────────────────────────
-function HomePage({ navigate }: { navigate: (p: Page) => void }) {
+function HomePage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
+  const { saved, toggle } = useSaved();
   const [activeCat, setActiveCat] = useState("All");
   const [activeTab, setActiveTab] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const cats = ["All", "🌅 Breakfast", "🥗 Lunch", "🍽️ Dinner", "🍰 Desserts", "🥦 Healthy", "🌿 Veg", "🥩 Non-Veg"];
 
-  const tabRecipes = [
-    [
-      { img: IMG.pasta, title: "Creamy Garlic Pasta", time: "25 min", rating: 4.9, calories: "480", category: "Dinner" },
-      { img: IMG.grill, title: "Spiced Grilled Lamb", time: "45 min", rating: 4.8, calories: "620", category: "Non-Veg" },
-      { img: IMG.cake, title: "Dark Chocolate Cake", time: "60 min", rating: 5.0, calories: "520", category: "Dessert" },
-      { img: IMG.bowl, title: "Protein Power Bowl", time: "15 min", rating: 4.9, calories: "390", category: "Healthy" },
-    ],
-    [
-      { img: IMG.salad, title: "Rainbow Veggie Salad", time: "10 min", rating: 4.8, calories: "210", category: "Healthy" },
-      { img: IMG.pancakes, title: "Blueberry Pancakes", time: "20 min", rating: 4.9, calories: "350", category: "Breakfast" },
-      { img: IMG.pasta2, title: "Speedy Arrabiata", time: "18 min", rating: 4.6, calories: "420", category: "Dinner" },
-      { img: IMG.bowl, title: "Avocado Toast Bowl", time: "8 min", rating: 4.7, calories: "280", category: "Breakfast" },
-    ],
-    [
-      { img: IMG.salad, title: "Detox Green Salad", time: "10 min", rating: 4.8, calories: "190", category: "Healthy" },
-      { img: IMG.bowl, title: "Quinoa Buddha Bowl", time: "25 min", rating: 4.9, calories: "320", category: "Vegan" },
-      { img: IMG.scallops, title: "Pan Seared Scallops", time: "15 min", rating: 4.8, calories: "260", category: "Seafood" },
-      { img: IMG.steak, title: "Herb Crusted Steak", time: "30 min", rating: 4.8, calories: "680", category: "Non-Veg" },
-    ],
-    [
-      { img: IMG.cake, title: "Celebration Cake", time: "75 min", rating: 5.0, calories: "550", category: "Dessert" },
-      { img: IMG.pancakes, title: "Festive Crepes", time: "35 min", rating: 4.8, calories: "410", category: "Dessert" },
-      { img: IMG.grill, title: "BBQ Feast Platter", time: "90 min", rating: 4.9, calories: "780", category: "Non-Veg" },
-      { img: IMG.scallops, title: "Seafood Celebration", time: "50 min", rating: 4.8, calories: "490", category: "Seafood" },
-    ],
-  ];
+  // Featured tabs pull real MealDB recipes (Trending/Quick/Healthy/Festival → mapped categories).
+  const [tabCards, setTabCards] = useState<Card[]>([]);
+  const [tabLoading, setTabLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    setTabLoading(true);
+    const cat = ["Non-Veg", "Lunch", "Healthy", "Desserts"][activeTab];
+    loadRecipes(cat)
+      .then(c => { if (alive) { setTabCards(c.slice(0, 4)); setTabLoading(false); } })
+      .catch(() => { if (alive) { setTabCards([]); setTabLoading(false); } });
+    return () => { alive = false; };
+  }, [activeTab]);
 
   const faqs = [
     { q: "How does the AI Chef work?", a: "Our AI understands your pantry, dietary needs, and taste profile to generate personalized recipes and step-by-step cooking guides in seconds." },
@@ -490,7 +477,14 @@ function HomePage({ navigate }: { navigate: (p: Page) => void }) {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {tabRecipes[activeTab].map((r, i) => <RecipeCard key={i} {...r} onClick={() => navigate("recipes")} />)}
+            {tabLoading
+              ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-72 rounded-2xl bg-muted/50 animate-pulse" />)
+              : tabCards.map(c => (
+                  <RecipeCard key={c.id} {...c}
+                    onClick={() => navigate("recipe-detail", c.id)}
+                    saved={saved.has(c.id)}
+                    onToggleSave={() => toggle(c.id)} />
+                ))}
           </div>
           <div className="text-center mt-10">
             <Btn variant="outline" onClick={() => navigate("recipes")}>View All Recipes <ArrowRight className="w-4 h-4" /></Btn>
@@ -917,13 +911,9 @@ function RecipeDetailPage({ navigate, recipeId }: { navigate: (p: Page, id?: str
       </div>
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=40&h=40&fit=crop" alt="Chef" className="w-10 h-10 rounded-full object-cover" />
-            <div>
-              <p className="font-semibold text-sm" style={{ fontFamily: "Fraunces, serif" }}>Chef Marcus Rivera</p>
-              <p className="text-muted-foreground text-xs">94K followers</p>
-            </div>
-            <Btn size="sm" variant="outline">Follow</Btn>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tag>{recipe.category}</Tag>
+            <span className="text-muted-foreground text-sm">{recipe.difficulty} · {recipe.cookTimeMinutes} min · serves {recipe.servings}</span>
           </div>
           <div className="flex gap-2">
             <button onClick={() => toggle(recipe.id)} className={`p-2.5 rounded-xl border transition-all ${isSaved ? "bg-red-50 border-red-200 text-red-500" : "border-border text-muted-foreground hover:border-primary"}`}>
@@ -957,7 +947,127 @@ function RecipeDetailPage({ navigate, recipeId }: { navigate: (p: Page, id?: str
             <h3 className="text-white font-bold text-lg" style={{ fontFamily: "Fraunces, serif" }}>Ready to cook?</h3>
             <p className="text-white/65 text-sm">Step-by-step mode with built-in timers</p>
           </div>
-          <Btn variant="secondary" className="bg-white text-primary hover:bg-orange-50 flex-shrink-0" size="lg"><Play className="w-5 h-5" /> Start</Btn>
+          <Btn variant="secondary" className="bg-white text-primary hover:bg-orange-50 flex-shrink-0" size="lg" onClick={() => navigate("cook", recipe.id)}><Play className="w-5 h-5" /> Start</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── COOK MODE ────────────────────────────────────────────────────────
+function CookModePage({ navigate, recipeId }: { navigate: (p: Page, id?: string) => void; recipeId: string | null }) {
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [steps, setSteps] = useState<CookStep[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [idx, setIdx] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!recipeId) { setLoading(false); return; }
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      const r = await getMealById(recipeId.replace(/^mdb_/, "")).catch(() => null);
+      if (!alive) return;
+      setRecipe(r);
+      const raw = r?.steps ?? [];
+      setSteps(raw);
+      setLoading(false); // show steps immediately — never block on the LLM
+      // Background: MealDB steps carry no timers — ask the LLM to add durations, swap in if it returns.
+      if (r && raw.length && raw.every(st => !st.durationSeconds)) {
+        structureRecipeSteps(r.name, raw.map(x => x.instruction).join("\n"))
+          .then(enh => { if (alive && enh.length) setSteps(enh); })
+          .catch(() => {});
+      }
+    })();
+    return () => { alive = false; };
+  }, [recipeId]);
+
+  const step = steps[idx];
+  useEffect(() => { setSecondsLeft(step?.durationSeconds ?? 0); setRunning(false); }, [idx, step?.durationSeconds]);
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => setSecondsLeft(s => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [running]);
+  useEffect(() => { if (secondsLeft === 0) setRunning(false); }, [secondsLeft]);
+
+  if (loading) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+      <p className="text-muted-foreground">Preparing your cook session…</p>
+    </div>
+  );
+  if (!recipe || !steps.length) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-5 text-center">
+      <div className="text-5xl">🍳</div>
+      <h2 className="text-2xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Couldn't load cook steps</h2>
+      <Btn onClick={() => navigate("recipes")}>Back to recipes</Btn>
+    </div>
+  );
+
+  if (done) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-5 px-5 text-center">
+      <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center"><Check className="w-10 h-10 text-accent" /></div>
+      <h1 className="text-4xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Meal complete! 🎉</h1>
+      <p className="text-muted-foreground max-w-md">You finished <span className="font-semibold text-foreground">{recipe.name}</span> — {steps.length} steps done. Enjoy your dish!</p>
+      <div className="flex gap-3 mt-2">
+        <Btn variant="outline" onClick={() => { setDone(false); setIdx(0); }}>Cook again</Btn>
+        <Btn onClick={() => navigate("recipe-detail", recipe.id)}>Back to recipe</Btn>
+      </div>
+    </div>
+  );
+
+  const pct = Math.round(((idx + 1) / steps.length) * 100);
+  const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
+  const hasTimer = (step?.durationSeconds ?? 0) > 0;
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* header */}
+      <div className="px-5 sm:px-8 pt-6 pb-4 border-b border-border/50">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("recipe-detail", recipe.id)} className="p-2 rounded-xl hover:bg-muted transition-colors"><X className="w-5 h-5" /></button>
+          <p className="font-semibold text-sm truncate px-3" style={{ fontFamily: "Fraunces, serif" }}>{recipe.name}</p>
+          <span className="text-sm text-muted-foreground tabular-nums">{idx + 1}/{steps.length}</span>
+        </div>
+        <div className="max-w-2xl mx-auto mt-4 h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      {/* current step */}
+      <div className="flex-1 flex flex-col items-center justify-center px-5 sm:px-8 py-8">
+        <div className="max-w-2xl w-full text-center">
+          <div className="inline-flex items-center gap-2 text-primary text-sm font-semibold mb-5"><Flame className="w-4 h-4" /> Step {idx + 1}</div>
+          <p className="text-2xl md:text-3xl font-bold leading-snug mb-6" style={{ fontFamily: "Fraunces, serif" }}>{step.instruction}</p>
+          {step.tip && <div className="inline-block bg-secondary/60 text-secondary-foreground text-sm rounded-xl px-4 py-2 mb-8">💡 {step.tip}</div>}
+
+          {hasTimer && (
+            <div className="mt-4 mb-8">
+              <div className={`text-6xl font-black tabular-nums mb-4 ${secondsLeft === 0 ? "text-accent" : "text-foreground"}`} style={{ fontFamily: "Fraunces, serif" }}>{mmss}</div>
+              <div className="flex items-center justify-center gap-3">
+                {secondsLeft === 0
+                  ? <span className="text-accent font-semibold flex items-center gap-1"><Check className="w-5 h-5" /> Time's up!</span>
+                  : <>
+                      <Btn size="sm" variant={running ? "outline" : "primary"} onClick={() => setRunning(r => !r)}>{running ? "Pause" : <><Play className="w-4 h-4" /> Start timer</>}</Btn>
+                      <Btn size="sm" variant="ghost" onClick={() => setSecondsLeft(s => s + 60)}>+1 min</Btn>
+                    </>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* nav controls */}
+      <div className="px-5 sm:px-8 pb-8 pt-4 border-t border-border/50">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <Btn variant="outline" className={`flex-1 ${idx === 0 ? "opacity-40 pointer-events-none" : ""}`} onClick={() => setIdx(i => Math.max(0, i - 1))}>Previous</Btn>
+          {idx < steps.length - 1
+            ? <Btn className="flex-1" onClick={() => setIdx(i => i + 1)}>Next step <ChevronRight className="w-4 h-4" /></Btn>
+            : <Btn variant="accent" className="flex-1" onClick={() => setDone(true)}><Check className="w-4 h-4" /> Finish</Btn>}
         </div>
       </div>
     </div>
@@ -971,6 +1081,8 @@ function AIChefPage() {
   const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const suggestions = ["I have chicken, garlic & lemon — what can I make?", "Quick 15-min healthy breakfast ideas", "How do I make perfect pasta carbonara?", "Romantic dinner for two suggestions"];
+  const [recent, setRecent] = useState<Recipe[]>([]);
+  useEffect(() => { getAllSavedRecipes().then(setRecent).catch(() => {}); }, []);
   const formatRecipe = (r: Recipe): string => {
     const ing = r.ingredients.map(i => `• ${`${i.quantity} ${i.unit} ${i.name}`.replace(/\s+/g, " ").trim()}`).join("\n");
     const st = r.steps.map((s, i) => `${i + 1}. ${s.instruction}${s.tip ? `\n   💡 ${s.tip}` : ""}`).join("\n");
@@ -985,6 +1097,7 @@ function AIChefPage() {
       const mode = /\bhave\b|ingredient/i.test(text) ? "ingredients" : "dish";
       const recipe = await generateRecipe(text, mode);
       saveGeneratedRecipe(recipe);
+      setRecent(r => [recipe, ...r]);
       setMessages(m => [...m, { role: "ai", content: formatRecipe(recipe) }]);
     } catch (e: any) {
       setMessages(m => [...m, { role: "ai", content: `⚠️ ${e?.message ?? "Couldn't generate a recipe. Please try again."}` }]);
@@ -1006,9 +1119,11 @@ function AIChefPage() {
         </div>
         <div className="p-4 flex-1 overflow-y-auto">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recent</p>
-          {["Mediterranean Bowl ideas", "Low-carb dinner options", "Birthday cake for 20", "Indian spice guide"].map((c, i) => (
-            <button key={i} className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-foreground/65 hover:bg-muted hover:text-foreground transition-colors truncate block">{c}</button>
-          ))}
+          {recent.length === 0
+            ? <p className="text-sm text-muted-foreground/70 px-3">No recipes yet — ask below to generate one.</p>
+            : recent.map((r) => (
+                <button key={r.id} onClick={() => send(r.name)} className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-foreground/65 hover:bg-muted hover:text-foreground transition-colors truncate block">{r.name}</button>
+              ))}
         </div>
         <div className="p-4 border-t border-border"><Btn size="sm" className="w-full"><Plus className="w-4 h-4" /> New Chat</Btn></div>
       </div>
@@ -1491,8 +1606,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const noNav    = page === "onboarding";
-  const noFooter = ["login", "signup", "ai-chef", "onboarding"].includes(page);
+  const noNav    = page === "onboarding" || page === "cook";
+  const noFooter = ["login", "signup", "ai-chef", "onboarding", "cook"].includes(page);
 
   return (
     <SavedProvider>
@@ -1508,6 +1623,7 @@ export default function App() {
           {page === "signup"        && <SignupPage navigate={navigate} />}
           {page === "onboarding"    && <OnboardingPage navigate={navigate} />}
           {page === "recipe-detail" && <RecipeDetailPage navigate={navigate} recipeId={selectedId} />}
+          {page === "cook"          && <CookModePage navigate={navigate} recipeId={selectedId} />}
           {page === "profile"       && <ProfilePage navigate={navigate} />}
           {page === "settings"      && <SettingsPage navigate={navigate} />}
         </main>

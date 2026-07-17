@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-testing": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-testing/SKILL.md",
+      "computedHash": "974ab9e40e99335ddb8cb678e699f13d56ab0c91e5a744178d1972f67f9b8b62"
+    },
+    "webapp-testing": {
+      "source": "composiohq/awesome-claude-skills",
+      "sourceType": "github",
+      "skillPath": "webapp-testing/SKILL.md",
+      "computedHash": "cf8e5916d474886bd67b09691247f43f331523008b7d366064bc607ab42d6302"
+    }
+  }
+}
