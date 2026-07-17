@@ -5,7 +5,8 @@ import type { Recipe, CookStep } from '../src/types';
 // Backend: NVIDIA NIM (OpenAI-compatible), model z-ai/glm-5.2.
 // Vercel serverless function: POST /api/ai { action, ...args }
 const API_KEY = process.env.NVIDIA_API_KEY ?? '';
-const MODEL = 'z-ai/glm-5.2';
+// Fastest Qwen on NVIDIA NIM that returns clean content (3B-active MoE, non-thinking instruct).
+const MODEL = 'qwen/qwen3-next-80b-a3b-instruct';
 
 const client = new OpenAI({
   baseURL: 'https://integrate.api.nvidia.com/v1',
@@ -15,7 +16,13 @@ const client = new OpenAI({
 });
 
 const stripFences = (t: string) =>
-  t.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+  t
+    .replace(/<think>[\s\S]*?<\/think>/gi, '') // drop any reasoning block a Qwen model might emit
+    .trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
 
 // The model must return raw JSON only — enforced in the system role, not buried in the user text.
 const JSON_SYSTEM =
