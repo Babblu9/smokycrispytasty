@@ -10,6 +10,8 @@ import {
   ChevronRight, Play, Timer, Utensils
 } from "lucide-react";
 import { SavedProvider, useSaved } from "@/store/saved";
+import { AuthProvider, useAuth } from "@/store/auth";
+import { supabase } from "@/lib/supabase";
 import { loadRecipes, searchRecipes, type Card } from "@/lib/recipes";
 import { getMealById } from "@/lib/mealdb";
 import { ratingFor, caloriesFor } from "@/lib/cookora";
@@ -163,6 +165,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Navbar ───────────────────────────────────────────────────────────
 function Navbar({ page, navigate }: { page: Page; navigate: (p: Page) => void }) {
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -203,8 +206,17 @@ function Navbar({ page, navigate }: { page: Page; navigate: (p: Page) => void })
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <button onClick={() => navigate("login")} className={`text-sm font-medium transition-colors px-4 py-2 ${(!scrolled && isHome) ? "text-white/80 hover:text-white" : "text-foreground/65 hover:text-primary"}`}>Login</button>
-            <Btn size="sm" onClick={() => navigate("signup")}>Get Started</Btn>
+            {user ? (
+              <>
+                <button onClick={() => navigate("profile")} className={`text-sm font-medium transition-colors px-4 py-2 ${(!scrolled && isHome) ? "text-white/80 hover:text-white" : "text-foreground/65 hover:text-primary"}`}>Profile</button>
+                <Btn size="sm" variant="outline" onClick={() => signOut()}>Log out</Btn>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate("login")} className={`text-sm font-medium transition-colors px-4 py-2 ${(!scrolled && isHome) ? "text-white/80 hover:text-white" : "text-foreground/65 hover:text-primary"}`}>Login</button>
+                <Btn size="sm" onClick={() => navigate("signup")}>Get Started</Btn>
+              </>
+            )}
           </div>
 
           <button onClick={() => setOpen(o => !o)} className={`lg:hidden p-2 rounded-xl transition-colors ${(!scrolled && isHome) ? "hover:bg-white/15" : "hover:bg-muted"}`}>
@@ -224,8 +236,17 @@ function Navbar({ page, navigate }: { page: Page; navigate: (p: Page) => void })
             </button>
           ))}
           <div className="flex gap-3 mt-4">
-            <Btn variant="outline" size="sm" className="flex-1" onClick={() => { navigate("login"); setOpen(false); }}>Login</Btn>
-            <Btn size="sm" className="flex-1" onClick={() => { navigate("signup"); setOpen(false); }}>Get Started</Btn>
+            {user ? (
+              <>
+                <Btn variant="outline" size="sm" className="flex-1" onClick={() => { navigate("profile"); setOpen(false); }}>Profile</Btn>
+                <Btn size="sm" className="flex-1" onClick={() => { signOut(); setOpen(false); }}>Log out</Btn>
+              </>
+            ) : (
+              <>
+                <Btn variant="outline" size="sm" className="flex-1" onClick={() => { navigate("login"); setOpen(false); }}>Login</Btn>
+                <Btn size="sm" className="flex-1" onClick={() => { navigate("signup"); setOpen(false); }}>Get Started</Btn>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1330,8 +1351,23 @@ function PremiumPage() {
 }
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────
-function LoginPage({ navigate }: { navigate: (p: Page) => void }) {
+function LoginPage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
+  const { signIn } = useAuth();
   const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(""); setBusy(true);
+    const { error } = await signIn(email.trim(), password);
+    setBusy(false);
+    if (error) setErr(error); else navigate("home");
+  };
+  const google = () => supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+
   return (
     <div className="pt-16 min-h-screen bg-background flex">
       <div className="hidden md:flex flex-1 relative overflow-hidden">
@@ -1354,25 +1390,24 @@ function LoginPage({ navigate }: { navigate: (p: Page) => void }) {
           <h1 className="text-3xl font-black mb-1" style={{ fontFamily: "Fraunces, serif" }}>Welcome back</h1>
           <p className="text-muted-foreground mb-8">Sign in to your SmokyCrispyTasty account</p>
           <div className="space-y-3 mb-6">
-            <button className="w-full flex items-center justify-center gap-3 bg-card border border-border rounded-2xl py-3 hover:bg-muted transition-colors font-medium text-sm">
+            <button onClick={google} className="w-full flex items-center justify-center gap-3 bg-card border border-border rounded-2xl py-3 hover:bg-muted transition-colors font-medium text-sm">
               <svg viewBox="0 0 24 24" className="w-5 h-5"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
               Continue with Google
             </button>
-            <button className="w-full flex items-center justify-center gap-3 bg-foreground text-white rounded-2xl py-3 hover:bg-foreground/90 transition-colors font-medium text-sm"><Apple className="w-5 h-5" /> Continue with Apple</button>
           </div>
           <div className="flex items-center gap-3 mb-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={submit}>
+            {err && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{err}</div>}
             <div><label className="text-sm font-medium block mb-1.5">Email</label>
-              <input type="email" className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="you@example.com" /></div>
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="you@example.com" /></div>
             <div>
-              <div className="flex justify-between mb-1.5"><label className="text-sm font-medium">Password</label><button type="button" className="text-xs text-primary hover:underline">Forgot?</button></div>
+              <div className="flex justify-between mb-1.5"><label className="text-sm font-medium">Password</label></div>
               <div className="relative">
-                <input type={show ? "text" : "password"} className="w-full bg-input-background rounded-2xl px-4 py-3 pr-11 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="••••••••" />
+                <input type={show ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 pr-11 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="••••••••" />
                 <button type="button" onClick={() => setShow(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
               </div>
             </div>
-            <div className="flex items-center gap-2"><input type="checkbox" id="rem" className="w-4 h-4 accent-primary rounded" /><label htmlFor="rem" className="text-sm text-muted-foreground cursor-pointer">Remember me for 30 days</label></div>
-            <Btn type="submit" className="w-full" size="lg">Sign In</Btn>
+            <Btn type="submit" className={`w-full ${busy ? "opacity-60 pointer-events-none" : ""}`} size="lg">{busy ? "Signing in…" : "Sign In"}</Btn>
           </form>
           <p className="text-center text-sm text-muted-foreground mt-6">No account? <button onClick={() => navigate("signup")} className="text-primary font-semibold hover:underline">Create one free</button></p>
         </div>
@@ -1382,9 +1417,30 @@ function LoginPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ─── SIGNUP PAGE ──────────────────────────────────────────────────────
-function SignupPage({ navigate }: { navigate: (p: Page) => void }) {
+function SignupPage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
+  const { signUp } = useAuth();
   const [show, setShow] = useState(false);
   const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (step < 2) { setStep(2); return; }
+    if (password !== confirm) { setErr("Passwords don't match"); return; }
+    if (password.length < 6) { setErr("Password must be at least 6 characters"); return; }
+    setBusy(true);
+    const { error } = await signUp(email.trim(), password, name.trim());
+    setBusy(false);
+    if (error) setErr(error); else navigate("onboarding");
+  };
+  const google = () => supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+
   return (
     <div className="pt-16 min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
@@ -1395,29 +1451,29 @@ function SignupPage({ navigate }: { navigate: (p: Page) => void }) {
         </div>
         <div className="flex gap-1.5 mb-8">{[1,2].map(s => <div key={s} className={`flex-1 h-1.5 rounded-full transition-all duration-400 ${step >= s ? "bg-primary" : "bg-muted"}`} />)}</div>
         <div className="space-y-3 mb-6">
-          <button className="w-full flex items-center justify-center gap-3 bg-card border border-border rounded-2xl py-3 hover:bg-muted transition-colors font-medium text-sm">
+          <button onClick={google} className="w-full flex items-center justify-center gap-3 bg-card border border-border rounded-2xl py-3 hover:bg-muted transition-colors font-medium text-sm">
             <svg viewBox="0 0 24 24" className="w-5 h-5"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             Sign up with Google
           </button>
-          <button className="w-full flex items-center justify-center gap-3 bg-foreground text-white rounded-2xl py-3 hover:bg-foreground/90 transition-colors font-medium text-sm"><Apple className="w-5 h-5" /> Sign up with Apple</button>
         </div>
         <div className="flex items-center gap-3 mb-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
-        <form onSubmit={e => { e.preventDefault(); if (step < 2) setStep(2); else navigate("onboarding"); }} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          {err && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{err}</div>}
           {step === 1 ? (
             <>
-              <div><label className="text-sm font-medium block mb-1.5">Full Name</label><input className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Jane Doe" required /></div>
-              <div><label className="text-sm font-medium block mb-1.5">Email</label><input type="email" className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="jane@example.com" required /></div>
+              <div><label className="text-sm font-medium block mb-1.5">Full Name</label><input value={name} onChange={e => setName(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Jane Doe" required /></div>
+              <div><label className="text-sm font-medium block mb-1.5">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="jane@example.com" required /></div>
               <Btn type="submit" className="w-full" size="lg">Continue <ArrowRight className="w-4 h-4" /></Btn>
             </>
           ) : (
             <>
               <div><label className="text-sm font-medium block mb-1.5">Password</label>
                 <div className="relative">
-                  <input type={show ? "text" : "password"} className="w-full bg-input-background rounded-2xl px-4 py-3 pr-11 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Create a strong password" required />
+                  <input type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 pr-11 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Create a strong password" required />
                   <button type="button" onClick={() => setShow(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                 </div></div>
-              <div><label className="text-sm font-medium block mb-1.5">Confirm Password</label><input type="password" className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Repeat password" required /></div>
-              <Btn type="submit" className="w-full" size="lg">Create Account <Sparkles className="w-4 h-4" /></Btn>
+              <div><label className="text-sm font-medium block mb-1.5">Confirm Password</label><input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 border border-transparent focus:border-primary/30 transition-all" placeholder="Repeat password" required /></div>
+              <Btn type="submit" className={`w-full ${busy ? "opacity-60 pointer-events-none" : ""}`} size="lg">{busy ? "Creating…" : <>Create Account <Sparkles className="w-4 h-4" /></>}</Btn>
             </>
           )}
         </form>
@@ -1610,6 +1666,7 @@ export default function App() {
   const noFooter = ["login", "signup", "ai-chef", "onboarding", "cook"].includes(page);
 
   return (
+    <AuthProvider>
     <SavedProvider>
       <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "Outfit, sans-serif" }}>
         {!noNav && <Navbar page={page} navigate={navigate} />}
@@ -1630,5 +1687,6 @@ export default function App() {
         {!noFooter && <Footer navigate={navigate} />}
       </div>
     </SavedProvider>
+    </AuthProvider>
   );
 }
