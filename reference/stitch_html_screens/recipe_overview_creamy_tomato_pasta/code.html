@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Creamy Tomato Pasta - Sous Chef</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#fff8f6",
+                    "secondary": "#865300",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#ffb595",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary-container": "#694000",
+                    "error": "#ba1a1a",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#0070ec",
+                    "on-background": "#251913",
+                    "surface-variant": "#f6ddd4",
+                    "background": "#fff8f6",
+                    "on-tertiary-container": "#fefcff",
+                    "secondary-fixed-dim": "#ffb961",
+                    "on-error-container": "#93000a",
+                    "outline": "#8c7166",
+                    "on-tertiary-fixed": "#001a41",
+                    "secondary-fixed": "#ffddb9",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-highest": "#f6ddd4",
+                    "outline-variant": "#e0c0b2",
+                    "tertiary-fixed-dim": "#adc6ff",
+                    "tertiary-fixed": "#d8e2ff",
+                    "tertiary": "#0058bd",
+                    "on-surface-variant": "#594238",
+                    "inverse-surface": "#3c2d27",
+                    "on-primary-fixed": "#351000",
+                    "on-tertiary-fixed-variant": "#004494",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-high": "#fce3da",
+                    "surface-dim": "#edd5cc",
+                    "primary": "#9e3d00",
+                    "surface-container": "#ffe9e1",
+                    "secondary-container": "#fea520",
+                    "surface-tint": "#a23f00",
+                    "on-primary-fixed-variant": "#7c2e00",
+                    "primary-fixed": "#ffdbcd",
+                    "surface-bright": "#fff8f6",
+                    "inverse-on-surface": "#ffede7",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#ffb595",
+                    "on-secondary-fixed-variant": "#663e00",
+                    "on-secondary-fixed": "#2b1700",
+                    "primary-container": "#c64f00",
+                    "surface-container-low": "#fff1ec",
+                    "on-surface": "#251913"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "md": "24px",
+                    "xl": "64px",
+                    "lg": "40px",
+                    "sm": "16px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "xs": "8px"
+            },
+            "fontFamily": {
+                    "label-bold": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-xl": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "JetBrains Mono"
+                    ]
+            },
+            "fontSize": {
+                    "label-bold": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-xl": [
+                            "40px",
+                            {
+                                    "lineHeight": "48px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "34px",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "30px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "38px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        /* Modern Stitch Brutalism Styles */
+        .stitch-card {
+            border: 2px solid #1A1A1A;
+            background-color: #ffffff;
+        }
+        .stitch-shadow {
+            box-shadow: 4px 4px 0px 0px #1A1A1A;
+        }
+        .stitch-shadow-hover:hover {
+            box-shadow: 2px 2px 0px 0px #1A1A1A;
+            transform: translate(2px, 2px);
+            transition: all 0.2s ease-in-out;
+        }
+        .stitch-shadow-active:active {
+            box-shadow: 0px 0px 0px 0px #1A1A1A;
+            transform: translate(4px, 4px);
+            transition: all 0.1s ease-in-out;
+        }
+        
+        /* Custom Checkbox */
+        .ingredient-checkbox {
+            appearance: none;
+            width: 32px;
+            height: 32px;
+            border: 2px solid #1A1A1A;
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .ingredient-checkbox:checked {
+            background-color: #fea520; /* Saffron */
+        }
+        .ingredient-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            width: 8px;
+            height: 16px;
+            border: solid #1A1A1A;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+        .ingredient-row.checked {
+            opacity: 0.6;
+            border-color: #8c7166; /* outline */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background font-headline-md text-headline-md w-full top-0 sticky border-b-2 border-on-background flex justify-between items-center px-margin-mobile h-16 w-full z-40 flat no shadows">
+<button class="text-on-surface-variant hover:bg-surface-container-high active:translate-y-[2px] transition-all p-2 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<span class="font-headline-md text-headline-md font-bold text-primary">Sous Chef</span>
+<button class="text-on-surface-variant hover:bg-surface-container-high active:translate-y-[2px] transition-all p-2 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="px-margin-mobile md:max-w-3xl mx-auto pt-md pb-xl">
+<!-- Recipe Header Card -->
+<section class="stitch-card mb-lg relative overflow-hidden">
+<div class="h-48 w-full bg-surface-variant bg-cover bg-center" data-alt="A vibrant overhead shot of a rustic bowl filled with creamy tomato penne pasta, garnished with fresh bright green basil leaves. The lighting is bright and modern, illuminating the rich terracotta colors of the sauce against a clean white marble countertop. The scene conveys a warm, inviting, and practical culinary atmosphere perfect for a home cooking guide." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDUjALA7-Qd4Q6Isn7R0qN1NycMZhc6CHr-qrqC_wsozkDgCWDc1UhBlI310ORb3flv2Yippudrc_U4f_T8s9G7m2M0XOVHXTwK87KG0Hso0oe-xCh3aGxitb7lnlsTeeyuF50ZVbVghlD9e4WWUoD48LMPpwA5RdH3RPaXIQ-FnHiz8FO8ehY-5a-XamkJFXR1sMlZiDCyLWd8ZXAcZEnN6ezxRe3x0-EsvyzWXD_2tR2CU-bzOJ4313eG7Aobq-ermHrt7NC8hk8');"></div>
+<div class="p-md">
+<div class="flex flex-wrap gap-sm mb-sm">
+<span class="font-label-bold text-label-bold bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full border-2 border-on-background inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span> 20 MIN
+                    </span>
+<span class="font-label-bold text-label-bold bg-surface-container-high text-on-surface px-3 py-1 rounded-full border-2 border-on-background inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">signal_cellular_alt_1_bar</span> EASY
+                    </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl md:hidden text-headline-lg-mobile font-headline-lg-mobile text-on-background mb-2">Creamy Tomato Pasta</h1>
+</div>
+</section>
+<!-- Servings Controller -->
+<section class="flex items-center justify-between stitch-card p-sm mb-lg">
+<span class="font-body-lg text-body-lg font-bold">Servings</span>
+<div class="flex items-center gap-md">
+<button class="w-12 h-12 flex items-center justify-center bg-surface-container-highest border-2 border-on-background hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined font-bold">remove</span>
+</button>
+<span class="font-headline-md text-headline-md w-8 text-center">4</span>
+<button class="w-12 h-12 flex items-center justify-center bg-surface-container-highest border-2 border-on-background hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined font-bold">add</span>
+</button>
+</div>
+</section>
+<!-- Ingredients Section -->
+<section>
+<h2 class="font-headline-lg text-headline-lg md:hidden text-headline-lg-mobile font-headline-lg-mobile mb-md border-b-2 border-on-background pb-2">Ingredients</h2>
+<div class="flex flex-col gap-sm">
+<!-- Item 1 -->
+<label class="ingredient-row flex items-center gap-md p-sm stitch-card transition-all cursor-pointer hover:bg-surface-container-lowest">
+<input class="ingredient-checkbox" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center">
+<span class="font-body-lg text-body-lg">Penne Pasta</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">400g</span>
+</div>
+</label>
+<!-- Item 2 -->
+<label class="ingredient-row flex items-center gap-md p-sm stitch-card transition-all cursor-pointer hover:bg-surface-container-lowest">
+<input class="ingredient-checkbox" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center">
+<span class="font-body-lg text-body-lg">San Marzano Tomatoes</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">2 cans</span>
+</div>
+</label>
+<!-- Item 3 -->
+<label class="ingredient-row flex items-center gap-md p-sm stitch-card transition-all cursor-pointer hover:bg-surface-container-lowest">
+<input class="ingredient-checkbox" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center">
+<span class="font-body-lg text-body-lg">Heavy Cream</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">1/2 cup</span>
+</div>
+</label>
+<!-- Item 4 -->
+<label class="ingredient-row flex items-center gap-md p-sm stitch-card transition-all cursor-pointer hover:bg-surface-container-lowest">
+<input class="ingredient-checkbox" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center">
+<span class="font-body-lg text-body-lg">Garlic, minced</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">3 cloves</span>
+</div>
+</label>
+<!-- Item 5 -->
+<label class="ingredient-row flex items-center gap-md p-sm stitch-card transition-all cursor-pointer hover:bg-surface-container-lowest">
+<input class="ingredient-checkbox" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center">
+<span class="font-body-lg text-body-lg">Fresh Basil</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">1 bunch</span>
+</div>
+</label>
+</div>
+</section>
+</main>
+<!-- Massive Sticky CTA -->
+<div class="fixed bottom-0 left-0 w-full p-margin-mobile bg-surface/90 backdrop-blur-sm border-t-2 border-on-background z-50">
+<button class="w-full h-16 bg-primary text-on-primary font-headline-md text-headline-md border-2 border-on-background stitch-shadow stitch-shadow-hover stitch-shadow-active flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+            Start Cooking
+        </button>
+</div>
+<script>
+        // Simple logic for ingredient checkboxes
+        document.querySelectorAll('.ingredient-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const row = e.target.closest('.ingredient-row');
+                if(e.target.checked) {
+                    row.classList.add('checked');
+                } else {
+                    row.classList.remove('checked');
+                }
+            });
+        });
+    </script>
+</body></html>

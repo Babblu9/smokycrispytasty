@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sous Chef - Active Cook</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#fff8f6",
+                        "secondary": "#865300",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#ffb595",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary-container": "#694000",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#0070ec",
+                        "on-background": "#251913",
+                        "surface-variant": "#f6ddd4",
+                        "background": "#fff8f6",
+                        "on-tertiary-container": "#fefcff",
+                        "secondary-fixed-dim": "#ffb961",
+                        "on-error-container": "#93000a",
+                        "outline": "#8c7166",
+                        "on-tertiary-fixed": "#001a41",
+                        "secondary-fixed": "#ffddb9",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#f6ddd4",
+                        "outline-variant": "#e0c0b2",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "tertiary-fixed": "#d8e2ff",
+                        "tertiary": "#0058bd",
+                        "on-surface-variant": "#594238",
+                        "inverse-surface": "#3c2d27",
+                        "on-primary-fixed": "#351000",
+                        "on-tertiary-fixed-variant": "#004494",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#fce3da",
+                        "surface-dim": "#edd5cc",
+                        "primary": "#9e3d00",
+                        "surface-container": "#ffe9e1",
+                        "secondary-container": "#fea520",
+                        "surface-tint": "#a23f00",
+                        "on-primary-fixed-variant": "#7c2e00",
+                        "primary-fixed": "#ffdbcd",
+                        "surface-bright": "#fff8f6",
+                        "inverse-on-surface": "#ffede7",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#ffb595",
+                        "on-secondary-fixed-variant": "#663e00",
+                        "on-secondary-fixed": "#2b1700",
+                        "primary-container": "#c64f00",
+                        "surface-container-low": "#fff1ec",
+                        "on-surface": "#251913"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "24px",
+                        "xl": "64px",
+                        "lg": "40px",
+                        "sm": "16px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "label-bold": ["JetBrains Mono"],
+                        "headline-xl": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-bold": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .hard-shadow {
+            box-shadow: 4px 4px 0px 0px #1A1A1A;
+        }
+        .hard-shadow:active {
+            box-shadow: 0px 0px 0px 0px #1A1A1A;
+            transform: translate(4px, 4px);
+        }
+        .stitch-border {
+            border: 2px solid #1A1A1A;
+        }
+        .circular-progress {
+            transform: rotate(-90deg);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-on-background border-b-2 border-on-background flex justify-between items-center px-margin-mobile h-16 w-full z-40">
+<button class="text-on-surface hover:bg-surface-container-high active:translate-y-[2px] transition-all p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
+<span class="material-symbols-outlined font-headline-md text-headline-md">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-bold text-primary">Sous Chef</div>
+<button class="text-on-surface hover:bg-surface-container-high active:translate-y-[2px] transition-all p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
+<span class="material-symbols-outlined font-headline-md text-headline-md">timer</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col p-margin-mobile gap-lg pb-32">
+<!-- Progress Bar -->
+<section class="w-full max-w-2xl mx-auto flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-bold text-label-bold text-on-surface-variant">Step 3 of 8</span>
+<span class="font-label-bold text-label-bold text-on-surface-variant">37.5%</span>
+</div>
+<div class="w-full h-4 bg-surface-variant stitch-border rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 37.5%;"></div>
+</div>
+</section>
+<!-- Active Step Card -->
+<section class="w-full max-w-2xl mx-auto flex-grow flex flex-col justify-center">
+<div class="bg-surface-container-lowest stitch-border hard-shadow rounded-xl overflow-hidden flex flex-col relative transition-all duration-200">
+<!-- Stitch Header -->
+<div class="h-3 w-full bg-secondary-container border-b-2 border-[#1A1A1A]"></div>
+<div class="p-lg flex flex-col items-center text-center gap-xl">
+<h1 class="font-headline-lg-mobile md:font-headline-xl text-headline-lg-mobile md:text-headline-xl text-on-background max-w-lg leading-tight">
+                        Sauté the chopped onions until translucent.
+                    </h1>
+<!-- Circular Timer -->
+<div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
+<svg class="absolute inset-0 w-full h-full circular-progress" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="45" stroke="#f6ddd4" stroke-width="4"></circle>
+<circle class="transition-all duration-1000 ease-linear" cx="50" cy="50" fill="none" r="45" stroke="#fea520" stroke-dasharray="282.7" stroke-dashoffset="70.67" stroke-width="8"></circle>
+</svg>
+<div class="flex flex-col items-center justify-center z-10 bg-surface-container-lowest rounded-full w-40 h-40 md:w-56 md:h-56 stitch-border border-4">
+<span class="font-label-bold text-[32px] md:text-[48px] leading-none text-on-background tracking-tighter">04:30</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-2 uppercase">Remaining</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Area -->
+<section class="w-full max-w-2xl mx-auto mt-auto">
+<button class="w-full bg-primary text-on-primary stitch-border hard-shadow rounded-xl py-sm px-lg font-label-bold text-label-bold md:text-[20px] uppercase tracking-wider transition-all focus:outline-none focus:ring-4 focus:ring-primary-container h-20 md:h-24 flex items-center justify-center gap-sm">
+                NEXT STEP
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full z-50 h-20 bg-surface flex justify-around items-center w-full px-gutter bg-surface border-t-2 border-on-background md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-label-bold text-label-bold mt-1 text-[10px]">Recipes</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl p-2 border-2 border-on-background shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[4px] active:shadow-none transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">skillet</span>
+<span class="font-label-bold text-label-bold mt-1 text-[10px]">Active Cook</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-bold text-label-bold mt-1 text-[10px]">Settings</span>
+</button>
+</nav>
+<!-- Web Navigation (Desktop Only) -->
+<nav class="hidden md:flex fixed top-16 left-0 h-[calc(100vh-64px)] w-20 bg-surface border-r-2 border-on-background flex-col items-center py-lg gap-lg z-30">
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-3 rounded-xl transition-all" title="Recipes">
+<span class="material-symbols-outlined text-[32px]">restaurant_menu</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all" title="Active Cook">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">skillet</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-3 rounded-xl transition-all mt-auto" title="Settings">
+<span class="material-symbols-outlined text-[32px]">settings</span>
+</button>
+</nav>
+</body></html>
