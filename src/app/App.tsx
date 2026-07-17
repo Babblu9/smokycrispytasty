@@ -1203,77 +1203,97 @@ function AIChefPage() {
 }
 
 // ─── COMMUNITY PAGE ───────────────────────────────────────────────────
-function CommunityPage({ navigate }: { navigate: (p: Page) => void }) {
-  const [liked, setLiked] = useState<Set<number>>(new Set());
-  const posts = [
-    { user: "Priya Sharma", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop", time: "2h ago", img: IMG.salad, caption: "Made this gorgeous rainbow salad bowl! 🌈 AI Chef suggested adding roasted chickpeas for protein — absolute game changer!", likes: 3241, comments: 87, tag: "Healthy" },
-    { user: "James Mitchell", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop", time: "5h ago", img: IMG.pasta, caption: "Perfected my carbonara after 6 failed attempts 😅 SmokyCrispyTasty AI walked me through every step. The pasta is silky and divine!", likes: 5890, comments: 213, tag: "Italian" },
-    { user: "Ananya Patel", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop", time: "1d ago", img: IMG.cake, caption: "Festival season baking! 🎉 Dark chocolate ganache cake for 20. From SmokyCrispyTasty Premium — worth every penny.", likes: 8120, comments: 445, tag: "Dessert" },
-  ];
-  const creators = [
-    { name: "Chef Marcus", sub: "94K followers · 284 recipes", img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=60&h=60&fit=crop" },
-    { name: "Maya Patel", sub: "67K followers · 193 recipes", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop" },
-    { name: "David Chen", sub: "52K followers · 156 recipes", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop" },
-  ];
+type Post = { id: string; user_id: string; caption: string; image_url: string | null; likes: number; created_at: string };
+
+function CommunityPage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState<Set<string>>(new Set());
+  const [composing, setComposing] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50);
+      const list = (data ?? []) as Post[];
+      if (!alive) return;
+      setPosts(list);
+      const ids = [...new Set(list.map(p => p.user_id))];
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id,name").in("id", ids);
+        if (alive) setNames(Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.name || "Cook"])));
+      }
+      if (alive) setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const createPost = async () => {
+    if (!user) { navigate("login"); return; }
+    if (!caption.trim()) return;
+    setPosting(true);
+    const { data, error } = await supabase.from("community_posts")
+      .insert({ user_id: user.id, caption: caption.trim(), image_url: imageUrl.trim() || null })
+      .select().single();
+    setPosting(false);
+    if (!error && data) {
+      setPosts(p => [data as Post, ...p]);
+      setNames(n => ({ ...n, [user.id]: (user.user_metadata?.name as string) || user.email?.split("@")[0] || "Cook" }));
+      setCaption(""); setImageUrl(""); setComposing(false);
+    }
+  };
+
+  const toggleLike = (id: string) => setLiked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const authorName = (uid: string) => names[uid] ?? "Cook";
 
   return (
     <div className="pt-16 min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10">
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-10">
         <div className="flex items-center justify-between mb-8">
-          <div><h1 className="text-3xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Community</h1><p className="text-muted-foreground mt-1">Discover and share amazing food moments</p></div>
-          <Btn><Plus className="w-4 h-4" /> Create Post</Btn>
+          <div><h1 className="text-3xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Community</h1><p className="text-muted-foreground mt-1">Share what you cooked</p></div>
+          <Btn onClick={() => (user ? setComposing(c => !c) : navigate("login"))}><Plus className="w-4 h-4" /> Create Post</Btn>
         </div>
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            {posts.map((p, i) => (
-              <div key={i} className="bg-card rounded-3xl shadow-sm overflow-hidden border border-border/40">
-                <div className="flex items-center justify-between p-5 pb-3">
-                  <div className="flex items-center gap-3">
-                    <img src={p.avatar} alt={p.user} className="w-10 h-10 rounded-full object-cover" />
-                    <div><p className="font-semibold text-sm" style={{ fontFamily: "Fraunces, serif" }}>{p.user}</p><p className="text-muted-foreground text-xs">{p.time}</p></div>
-                  </div>
-                  <div className="flex items-center gap-2"><Tag>{p.tag}</Tag><Btn size="sm" variant="outline">Follow</Btn></div>
-                </div>
-                <div className="relative">
-                  <img src={p.img} alt="" className="w-full h-72 object-cover" />
-                  <button className="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold"><Play className="w-3.5 h-3.5 text-primary fill-primary" /> Watch</button>
-                </div>
-                <div className="p-5">
-                  <p className="text-sm text-foreground/80 leading-relaxed mb-4">{p.caption}</p>
-                  <div className="flex items-center gap-4 pt-3 border-t border-border">
-                    <button onClick={() => setLiked(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; })} className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${liked.has(i) ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
-                      <Heart className={`w-5 h-5 ${liked.has(i) ? "fill-red-500" : ""}`} /> {(p.likes + (liked.has(i) ? 1 : 0)).toLocaleString()}
-                    </button>
-                    <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"><MessageCircle className="w-5 h-5" /> {p.comments}</button>
-                    <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-accent transition-colors"><Share2 className="w-5 h-5" /> Share</button>
-                    <button className="ml-auto text-muted-foreground hover:text-primary transition-colors"><Bookmark className="w-5 h-5" /></button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-6">
-            <div className="bg-card rounded-3xl shadow-sm p-5 border border-border/40">
-              <h3 className="font-bold mb-4" style={{ fontFamily: "Fraunces, serif" }}>Popular Creators</h3>
-              <div className="space-y-4">
-                {creators.map((c, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <img src={c.img} alt={c.name} className="w-11 h-11 rounded-full object-cover" />
-                    <div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate" style={{ fontFamily: "Fraunces, serif" }}>{c.name}</p><p className="text-muted-foreground text-xs">{c.sub}</p></div>
-                    <Btn size="sm" variant="outline">Follow</Btn>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-card rounded-3xl shadow-sm p-5 border border-border/40">
-              <h3 className="font-bold mb-4 flex items-center gap-2" style={{ fontFamily: "Fraunces, serif" }}><TrendingUp className="w-4 h-4 text-primary" /> Trending</h3>
-              <div className="flex flex-wrap gap-2">
-                {["#QuickMeals", "#HealthyEating", "#AIChef", "#PastaLovers", "#MealPrep", "#VeganFood", "#HomeChef"].map(t => (
-                  <button key={t} className="text-xs bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors font-medium">{t}</button>
-                ))}
-              </div>
+
+        {composing && (
+          <div className="bg-card rounded-3xl shadow-sm border border-border/40 p-5 mb-8">
+            <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={3} placeholder="What did you cook? Share the story…" className="w-full bg-input-background rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25 resize-none mb-3" />
+            <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Image URL (optional)" className="w-full bg-input-background rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/25 mb-3" />
+            <div className="flex justify-end gap-2">
+              <Btn variant="ghost" size="sm" onClick={() => setComposing(false)}>Cancel</Btn>
+              <Btn size="sm" className={posting ? "opacity-60 pointer-events-none" : ""} onClick={createPost}>{posting ? "Posting…" : "Post"}</Btn>
             </div>
           </div>
+        )}
+
+        <div className="space-y-6">
+          {loading
+            ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-64 rounded-3xl bg-muted/50 animate-pulse" />)
+            : posts.length === 0
+              ? <div className="text-center py-20 text-muted-foreground">No posts yet. Be the first to share what you cooked!</div>
+              : posts.map(p => (
+                  <div key={p.id} className="bg-card rounded-3xl shadow-sm overflow-hidden border border-border/40">
+                    <div className="flex items-center gap-3 p-5 pb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-black" style={{ fontFamily: "Fraunces, serif" }}>{authorName(p.user_id).charAt(0).toUpperCase()}</div>
+                      <div><p className="font-semibold text-sm" style={{ fontFamily: "Fraunces, serif" }}>{authorName(p.user_id)}</p><p className="text-muted-foreground text-xs">{new Date(p.created_at).toLocaleDateString()}</p></div>
+                    </div>
+                    {p.image_url && <img src={p.image_url} alt="" className="w-full max-h-96 object-cover" />}
+                    <div className="p-5">
+                      <p className="text-sm text-foreground/80 leading-relaxed mb-4 whitespace-pre-line">{p.caption}</p>
+                      <div className="flex items-center gap-4 pt-3 border-t border-border">
+                        <button onClick={() => toggleLike(p.id)} className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${liked.has(p.id) ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
+                          <Heart className={`w-5 h-5 ${liked.has(p.id) ? "fill-red-500" : ""}`} /> {p.likes + (liked.has(p.id) ? 1 : 0)}
+                        </button>
+                        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-accent transition-colors"><Share2 className="w-5 h-5" /> Share</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
         </div>
       </div>
     </div>
@@ -1485,19 +1505,44 @@ function SignupPage({ navigate }: { navigate: (p: Page, id?: string) => void }) 
 }
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────
-function ProfilePage({ navigate }: { navigate: (p: Page) => void }) {
-  const [tab, setTab] = useState("recipes");
-  const saved = [
-    { img: IMG.pasta, title: "Creamy Garlic Pasta", time: "25 min", rating: 4.9, calories: "480", category: "Dinner" },
-    { img: IMG.salad, title: "Rainbow Veggie Salad", time: "10 min", rating: 4.8, calories: "210", category: "Healthy" },
-    { img: IMG.cake, title: "Dark Chocolate Cake", time: "60 min", rating: 5.0, calories: "520", category: "Dessert" },
-    { img: IMG.bowl, title: "Protein Power Bowl", time: "15 min", rating: 4.9, calories: "390", category: "Healthy" },
-  ];
-  const achievements = [
-    { e: "🍳", l: "First Recipe", ok: true }, { e: "⭐", l: "5-Star Cook", ok: true },
-    { e: "🔥", l: "7-Day Streak", ok: true }, { e: "👨‍🍳", l: "Master Chef", ok: false },
-    { e: "🌍", l: "Global Palate", ok: true }, { e: "💎", l: "Premium", ok: true },
-  ];
+function ProfilePage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
+  const { user, signOut } = useAuth();
+  const { saved, toggle } = useSaved();
+  const [tab, setTab] = useState<"saved" | "ai">("saved");
+  const [savedCards, setSavedCards] = useState<Card[]>([]);
+  const [aiRecipes, setAiRecipes] = useState<Recipe[]>([]);
+
+  useEffect(() => { getAllSavedRecipes().then(setAiRecipes).catch(() => {}); }, []);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const cards = await Promise.all([...saved].map(async (id): Promise<Card | null> => {
+        const r = id.startsWith("gen_")
+          ? await getGeneratedRecipe(id)
+          : await getMealById(id.replace(/^mdb_/, "")).catch(() => null);
+        return r ? { id, img: r.image ?? "", title: r.name, time: `${r.cookTimeMinutes} min`, rating: ratingFor(id), calories: String(caloriesFor(id)), category: r.category } : null;
+      }));
+      if (alive) setSavedCards(cards.filter(Boolean) as Card[]);
+    })();
+    return () => { alive = false; };
+  }, [saved]);
+
+  if (!user) return (
+    <div className="pt-16 min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-5 text-center">
+      <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center"><User className="w-8 h-8 text-primary" /></div>
+      <h2 className="text-2xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Sign in to view your profile</h2>
+      <p className="text-muted-foreground max-w-sm">Save recipes, track your AI creations, and share with the community.</p>
+      <div className="flex gap-3 mt-2">
+        <Btn onClick={() => navigate("login")}>Sign in</Btn>
+        <Btn variant="outline" onClick={() => navigate("signup")}>Create account</Btn>
+      </div>
+    </div>
+  );
+
+  const name = (user.user_metadata?.name as string) || user.email?.split("@")[0] || "Cook";
+  const initial = name.charAt(0).toUpperCase();
+  const memberSince = user.created_at ? new Date(user.created_at).getFullYear() : "";
+
   return (
     <div className="pt-16 min-h-screen bg-background">
       <div className="relative h-44 bg-gradient-to-br from-primary via-orange-400 to-orange-300 overflow-hidden">
@@ -1505,67 +1550,40 @@ function ProfilePage({ navigate }: { navigate: (p: Page) => void }) {
       </div>
       <div className="max-w-4xl mx-auto px-5 sm:px-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-14 mb-8 relative z-10">
-          <div className="relative">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop" alt="Profile" className="w-28 h-28 rounded-full border-4 border-background object-cover shadow-xl" />
-            <button className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center shadow"><Camera className="w-3.5 h-3.5" /></button>
-          </div>
+          <div className="w-28 h-28 rounded-full border-4 border-background bg-primary text-white flex items-center justify-center text-4xl font-black shadow-xl" style={{ fontFamily: "Fraunces, serif" }}>{initial}</div>
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="text-2xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Priya Sharma</h1>
-              <Crown className="w-5 h-5 text-yellow-500" />
-            </div>
-            <p className="text-muted-foreground text-sm">@priyacooks · San Francisco</p>
+            <h1 className="text-2xl font-black mb-0.5" style={{ fontFamily: "Fraunces, serif" }}>{name}</h1>
+            <p className="text-muted-foreground text-sm">{user.email}</p>
           </div>
           <div className="flex gap-2.5">
-            <Btn variant="outline" size="sm" onClick={() => navigate("settings")}><Edit className="w-4 h-4" /> Edit</Btn>
-            <Btn size="sm" variant="ghost" className="border border-border" onClick={() => navigate("settings")}><Settings className="w-4 h-4" /></Btn>
+            <Btn variant="outline" size="sm" onClick={() => navigate("settings")}><Settings className="w-4 h-4" /> Settings</Btn>
+            <Btn size="sm" variant="ghost" className="border border-border" onClick={() => signOut()}><LogOut className="w-4 h-4" /> Log out</Btn>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-4 mb-7 bg-card rounded-2xl p-5 shadow-sm border border-border/40">
-          {[["284", "Recipes"], ["12.4K", "Followers"], ["830", "Following"], ["4.9★", "Rating"]].map(([v, l]) => (
+        <div className="grid grid-cols-3 gap-4 mb-7 bg-card rounded-2xl p-5 shadow-sm border border-border/40">
+          {[[String(saved.size), "Saved"], [String(aiRecipes.length), "AI Recipes"], [String(memberSince), "Member since"]].map(([v, l]) => (
             <div key={l} className="text-center">
               <p className="text-2xl font-black" style={{ fontFamily: "Fraunces, serif" }}>{v}</p>
               <p className="text-muted-foreground text-xs">{l}</p>
             </div>
           ))}
         </div>
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200/60 rounded-2xl p-4 flex items-center gap-3 mb-7">
-          <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-          <div className="flex-1"><p className="font-semibold text-sm">Premium Member</p><p className="text-muted-foreground text-xs">Renews Jan 15, 2026</p></div>
-          <Tag color="green">Active</Tag>
-        </div>
         <div className="flex gap-1 mb-8 bg-muted/40 rounded-2xl p-1">
-          {["recipes", "saved", "ai-history", "achievements"].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${tab === t ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"}`}>{t.replace("-", " ")}</button>
+          {(["saved", "ai"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"}`}>{t === "saved" ? "Saved Recipes" : "AI Recipes"}</button>
           ))}
         </div>
-        {(tab === "recipes" || tab === "saved") && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-12">{saved.map((r, i) => <RecipeCard key={i} {...r} saved onClick={() => navigate("recipe-detail")} />)}</div>}
-        {tab === "ai-history" && (
-          <div className="space-y-3 pb-12">
-            {[
-              { q: "Quick pasta for dinner tonight", t: "Today, 6:30 PM", r: "3 recipes suggested" },
-              { q: "High protein breakfast ideas", t: "Yesterday, 8:12 AM", r: "5 recipes generated" },
-              { q: "How to make croissants from scratch", t: "Dec 28, 2024", r: "Full guide provided" },
-              { q: "Low calorie comfort food ideas", t: "Dec 25, 2024", r: "8 recipes suggested" },
-            ].map((item, i) => (
-              <div key={i} className="bg-card border border-border/40 rounded-xl p-4 shadow-sm flex items-center gap-4">
+        {tab === "saved" && (savedCards.length
+          ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-12">{savedCards.map(c => <RecipeCard key={c.id} {...c} saved onToggleSave={() => toggle(c.id)} onClick={() => navigate("recipe-detail", c.id)} />)}</div>
+          : <div className="text-center py-16 text-muted-foreground pb-12">No saved recipes yet. Tap the ♥ on any recipe to save it.</div>)}
+        {tab === "ai" && (aiRecipes.length
+          ? <div className="space-y-3 pb-12">{aiRecipes.map(r => (
+              <div key={r.id} className="bg-card border border-border/40 rounded-xl p-4 shadow-sm flex items-center gap-4">
                 <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0"><Sparkles className="w-4 h-4 text-primary" /></div>
-                <div className="flex-1 min-w-0"><p className="font-medium text-sm truncate">{item.q}</p><p className="text-muted-foreground text-xs">{item.t} · {item.r}</p></div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0"><p className="font-medium text-sm truncate">{r.name}</p><p className="text-muted-foreground text-xs">{r.category} · {r.cookTimeMinutes} min · {r.difficulty}</p></div>
               </div>
-            ))}
-          </div>
-        )}
-        {tab === "achievements" && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pb-12">
-            {achievements.map((a, i) => (
-              <div key={i} className={`bg-card border border-border/40 rounded-2xl p-4 text-center shadow-sm ${!a.ok ? "opacity-35 grayscale" : ""}`}>
-                <div className="text-3xl mb-2">{a.e}</div>
-                <p className="text-xs font-semibold">{a.l}</p>
-              </div>
-            ))}
-          </div>
-        )}
+            ))}</div>
+          : <div className="text-center py-16 text-muted-foreground pb-12">No AI recipes yet. Ask the AI Chef to generate one.</div>)}
       </div>
     </div>
   );
