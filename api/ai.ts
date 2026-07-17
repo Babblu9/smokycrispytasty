@@ -5,8 +5,8 @@ import type { Recipe, CookStep } from '../src/types';
 // Backend: NVIDIA NIM (OpenAI-compatible), model z-ai/glm-5.2.
 // Vercel serverless function: POST /api/ai { action, ...args }
 const API_KEY = process.env.NVIDIA_API_KEY ?? '';
-// Fastest Qwen on NVIDIA NIM that returns clean content (3B-active MoE, non-thinking instruct).
-const MODEL = 'qwen/qwen3-next-80b-a3b-instruct';
+// Fast + reliable on NVIDIA NIM (~1-2s). Qwen instruct options here were slow/flaky.
+const MODEL = 'meta/llama-3.1-8b-instruct';
 
 const client = new OpenAI({
   baseURL: 'https://integrate.api.nvidia.com/v1',
