@@ -1086,13 +1086,21 @@ function CookModePage({ navigate, recipeId }: { navigate: (p: Page, id?: string)
           {hasTimer && (
             <div className="mt-4 mb-8">
               <div className={`text-6xl font-black tabular-nums mb-4 ${secondsLeft === 0 ? "text-accent" : "text-foreground"}`} style={{ fontFamily: "Fraunces, serif" }}>{mmss}</div>
-              <div className="flex items-center justify-center gap-3">
-                {secondsLeft === 0
-                  ? <span className="text-accent font-semibold flex items-center gap-1"><Check className="w-5 h-5" /> Time's up!</span>
-                  : <>
-                      <Btn size="sm" variant={running ? "outline" : "primary"} onClick={() => setRunning(r => !r)}>{running ? "Pause" : <><Play className="w-4 h-4" /> Start timer</>}</Btn>
-                      <Btn size="sm" variant="ghost" onClick={() => setSecondsLeft(s => s + 60)}>+1 min</Btn>
-                    </>}
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {secondsLeft === 0 ? (
+                  <>
+                    <span className="text-accent font-semibold flex items-center gap-1"><Check className="w-5 h-5" /> Time's up!</span>
+                    {/* add extra time → timer restarts immediately */}
+                    <Btn size="sm" variant="outline" onClick={() => { setSecondsLeft(30); setRunning(true); }}>+30s</Btn>
+                    <Btn size="sm" variant="outline" onClick={() => { setSecondsLeft(60); setRunning(true); }}>+60s</Btn>
+                  </>
+                ) : (
+                  <>
+                    <Btn size="sm" variant={running ? "outline" : "primary"} onClick={() => setRunning(r => !r)}>{running ? "Pause" : <><Play className="w-4 h-4" /> Start timer</>}</Btn>
+                    <Btn size="sm" variant="ghost" onClick={() => { setSecondsLeft(s => s + 30); setRunning(true); }}>+30s</Btn>
+                    <Btn size="sm" variant="ghost" onClick={() => { setSecondsLeft(s => s + 60); setRunning(true); }}>+60s</Btn>
+                  </>
+                )}
               </div>
             </div>
           )}
