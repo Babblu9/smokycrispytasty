@@ -1,8 +1,8 @@
-import { getMealsByCategory, searchMeals } from '@/lib/mealdb';
+import { supabase } from '@/lib/supabase';
 import { ratingFor, caloriesFor } from '@/lib/cookora';
-import type { MealSummary } from '@/lib/mealdb';
+import type { Recipe } from '@/types';
 
-// Shape matches <RecipeCard> props verbatim (+ id for navigation), so App.tsx can spread it.
+// Shape matches <RecipeCard> props verbatim (+ id), so App.tsx can spread it.
 export type Card = {
   id: string;
   img: string;
@@ -13,39 +13,62 @@ export type Card = {
   category: string;
 };
 
-// The UI's category pills don't match MealDB's categories 1:1. Map the closest.
-// ponytail: MealDB has no Lunch/Dinner/Healthy — approximate. Swap categories if it matters.
-const CAT_MAP: Record<string, string> = {
-  All: 'Chicken',
-  Breakfast: 'Breakfast',
-  Lunch: 'Pasta',
-  Dinner: 'Beef',
-  Desserts: 'Dessert',
-  Healthy: 'Vegetarian',
-  Veg: 'Vegetarian',
-  'Non-Veg': 'Chicken',
-  Seafood: 'Seafood',
+type Row = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  image_url: string | null;
+  prep_minutes: number;
+  cook_minutes: number;
+  servings: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  ingredients: { name: string; quantity: string; unit: string }[];
+  steps: { instruction: string; durationSeconds?: number; tip?: string }[];
 };
 
-function toCard(m: MealSummary, categoryLabel: string): Card {
-  const id = `mdb_${m.idMeal}`;
+function rowToCard(r: Row): Card {
   return {
-    id,
-    img: m.strMealThumb,
-    title: m.strMeal,
-    time: '30 min', // MealDB gives no time; placeholder
-    rating: ratingFor(id),
-    calories: String(caloriesFor(id)),
-    category: categoryLabel,
+    id: r.id,
+    img: r.image_url ?? '',
+    title: r.name,
+    time: `${r.cook_minutes} min`,
+    rating: ratingFor(r.id),
+    calories: String(caloriesFor(r.id)),
+    category: r.category ?? 'Signature',
   };
 }
 
+export function rowToRecipe(r: Row): Recipe {
+  return {
+    id: r.id,
+    name: r.name,
+    description: r.description ?? '',
+    category: r.category ?? 'Signature',
+    prepTimeMinutes: r.prep_minutes,
+    cookTimeMinutes: r.cook_minutes,
+    servings: r.servings,
+    difficulty: r.difficulty,
+    image: r.image_url ?? undefined,
+    ingredients: r.ingredients ?? [],
+    steps: (r.steps ?? []).map((s, i) => ({ id: `step_${i + 1}`, instruction: s.instruction, durationSeconds: s.durationSeconds ?? 0, tip: s.tip })),
+  };
+}
+
+// Category pills are loose labels; "All" returns everything, otherwise fuzzy-match category.
 export async function loadRecipes(uiCat: string): Promise<Card[]> {
-  const meals = await getMealsByCategory(CAT_MAP[uiCat] ?? 'Chicken');
-  return meals.slice(0, 12).map((m) => toCard(m, uiCat === 'All' ? 'Recipe' : uiCat));
+  let q = supabase.from('recipes').select('*').order('created_at', { ascending: false });
+  if (uiCat && uiCat !== 'All') q = q.ilike('category', `%${uiCat}%`);
+  const { data } = await q;
+  return (data as Row[] | null ?? []).map(rowToCard);
 }
 
 export async function searchRecipes(query: string): Promise<Card[]> {
-  const meals = await searchMeals(query);
-  return meals.slice(0, 12).map((m) => toCard(m, 'Recipe'));
+  const { data } = await supabase.from('recipes').select('*').ilike('name', `%${query}%`).order('created_at', { ascending: false });
+  return (data as Row[] | null ?? []).map(rowToCard);
+}
+
+export async function getRecipeById(id: string): Promise<Recipe | null> {
+  const { data } = await supabase.from('recipes').select('*').eq('id', id).maybeSingle();
+  return data ? rowToRecipe(data as Row) : null;
 }

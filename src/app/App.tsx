@@ -12,8 +12,7 @@ import {
 import { SavedProvider, useSaved } from "@/store/saved";
 import { AuthProvider, useAuth } from "@/store/auth";
 import { supabase } from "@/lib/supabase";
-import { loadRecipes, searchRecipes, type Card } from "@/lib/recipes";
-import { getMealById } from "@/lib/mealdb";
+import { loadRecipes, searchRecipes, getRecipeById, type Card } from "@/lib/recipes";
 import { ratingFor, caloriesFor } from "@/lib/cookora";
 import { generateRecipe } from "@/lib/ai";
 import { saveGeneratedRecipe, getAllSavedRecipes } from "@/store/generatedRecipes";
@@ -212,10 +211,7 @@ function Navbar({ page, navigate }: { page: Page; navigate: (p: Page) => void })
                 <Btn size="sm" variant="outline" onClick={() => signOut()}>Log out</Btn>
               </>
             ) : (
-              <>
-                <button onClick={() => navigate("login")} className={`text-sm font-medium transition-colors px-4 py-2 ${(!scrolled && isHome) ? "text-white/80 hover:text-white" : "text-foreground/65 hover:text-primary"}`}>Login</button>
-                <Btn size="sm" onClick={() => navigate("signup")}>Get Started</Btn>
-              </>
+              <Btn size="sm" onClick={() => navigate("login")}>Sign in</Btn>
             )}
           </div>
 
@@ -242,10 +238,7 @@ function Navbar({ page, navigate }: { page: Page; navigate: (p: Page) => void })
                 <Btn size="sm" className="flex-1" onClick={() => { signOut(); setOpen(false); }}>Log out</Btn>
               </>
             ) : (
-              <>
-                <Btn variant="outline" size="sm" className="flex-1" onClick={() => { navigate("login"); setOpen(false); }}>Login</Btn>
-                <Btn size="sm" className="flex-1" onClick={() => { navigate("signup"); setOpen(false); }}>Get Started</Btn>
-              </>
+              <Btn size="sm" className="flex-1" onClick={() => { navigate("login"); setOpen(false); }}>Sign in</Btn>
             )}
           </div>
         </div>
@@ -897,7 +890,7 @@ function RecipeDetailPage({ navigate, recipeId }: { navigate: (p: Page, id?: str
     if (!recipeId) { setLoading(false); return; }
     let alive = true;
     setLoading(true);
-    getMealById(recipeId.replace(/^mdb_/, ""))
+    getRecipeById(recipeId)
       .then(r => { if (alive) { setRecipe(r); setServings(r?.servings ?? 4); setLoading(false); } })
       .catch(() => { if (alive) { setRecipe(null); setLoading(false); } });
     return () => { alive = false; };
@@ -1007,7 +1000,7 @@ function CookModePage({ navigate, recipeId }: { navigate: (p: Page, id?: string)
     let alive = true;
     (async () => {
       setLoading(true);
-      const r = await getMealById(recipeId.replace(/^mdb_/, "")).catch(() => null);
+      const r = await getRecipeById(recipeId).catch(() => null);
       if (!alive) return;
       setRecipe(r);
       const raw = r?.steps ?? [];
@@ -1454,7 +1447,7 @@ function LoginPage({ navigate }: { navigate: (p: Page, id?: string) => void }) {
             </div>
             <Btn type="submit" className={`w-full ${busy ? "opacity-60 pointer-events-none" : ""}`} size="lg">{busy ? "Signing in…" : "Sign In"}</Btn>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-6">No account? <button onClick={() => navigate("signup")} className="text-primary font-semibold hover:underline">Create one free</button></p>
+          <p className="text-center text-sm text-muted-foreground mt-6">Accounts are issued by the team. Contact us for access.</p>
         </div>
       </div>
     </div>
@@ -1544,7 +1537,7 @@ function ProfilePage({ navigate }: { navigate: (p: Page, id?: string) => void })
       const cards = await Promise.all([...saved].map(async (id): Promise<Card | null> => {
         const r = id.startsWith("gen_")
           ? await getGeneratedRecipe(id)
-          : await getMealById(id.replace(/^mdb_/, "")).catch(() => null);
+          : await getRecipeById(id).catch(() => null);
         return r ? { id, img: r.image ?? "", title: r.name, time: `${r.cookTimeMinutes} min`, rating: ratingFor(id), calories: String(caloriesFor(id)), category: r.category } : null;
       }));
       if (alive) setSavedCards(cards.filter(Boolean) as Card[]);
@@ -1694,6 +1687,25 @@ function SettingsPage({ navigate }: { navigate: (p: Page) => void }) {
   );
 }
 
+// ─── Auth gate for recipe pages ───────────────────────────────────────
+function Gate({ navigate, children }: { navigate: (p: Page, id?: string) => void; children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return (
+    <div className="pt-32 min-h-screen bg-background flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+  if (!user) return (
+    <div className="pt-16 min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-5 text-center">
+      <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center"><Lock className="w-7 h-7 text-primary" /></div>
+      <h2 className="text-2xl font-black" style={{ fontFamily: "Fraunces, serif" }}>Members only</h2>
+      <p className="text-muted-foreground max-w-sm">Sign in with the credentials provided to view our signature recipes.</p>
+      <Btn onClick={() => navigate("login")}>Sign in</Btn>
+    </div>
+  );
+  return <>{children}</>;
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>("home");
@@ -1715,15 +1727,15 @@ export default function App() {
         {!noNav && <Navbar page={page} navigate={navigate} />}
         <main className="flex-1">
           {page === "home"          && <HomePage navigate={navigate} />}
-          {page === "recipes"       && <RecipesPage navigate={navigate} />}
+          {page === "recipes"       && <Gate navigate={navigate}><RecipesPage navigate={navigate} /></Gate>}
           {page === "ai-chef"       && <AIChefPage />}
           {page === "community"     && <CommunityPage navigate={navigate} />}
           {page === "premium"       && <PremiumPage />}
           {page === "login"         && <LoginPage navigate={navigate} />}
-          {page === "signup"        && <SignupPage navigate={navigate} />}
+          {page === "signup"        && <LoginPage navigate={navigate} />}
           {page === "onboarding"    && <OnboardingPage navigate={navigate} />}
-          {page === "recipe-detail" && <RecipeDetailPage navigate={navigate} recipeId={selectedId} />}
-          {page === "cook"          && <CookModePage navigate={navigate} recipeId={selectedId} />}
+          {page === "recipe-detail" && <Gate navigate={navigate}><RecipeDetailPage navigate={navigate} recipeId={selectedId} /></Gate>}
+          {page === "cook"          && <Gate navigate={navigate}><CookModePage navigate={navigate} recipeId={selectedId} /></Gate>}
           {page === "profile"       && <ProfilePage navigate={navigate} />}
           {page === "settings"      && <SettingsPage navigate={navigate} />}
         </main>
