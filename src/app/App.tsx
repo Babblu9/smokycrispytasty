@@ -868,6 +868,23 @@ function RecipesPage({ navigate }: { navigate: (p: Page, id?: string) => void })
   );
 }
 
+// Scale a MealDB quantity ("3/4", "1 1/2", "200", "to taste") by a ratio.
+// Numeric prefix is multiplied; non-numeric ("to taste", "pinch") passes through untouched.
+function scaleQty(qty: string, ratio: number): string {
+  const s = qty.trim();
+  if (ratio === 1) return s;
+  const m = s.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d*\.?\d+)/);
+  if (!m) return s;
+  const token = m[1];
+  let val: number;
+  if (token.includes(" ")) { const [w, f] = token.split(/\s+/); const [n, d] = f.split("/"); val = Number(w) + Number(n) / Number(d); }
+  else if (token.includes("/")) { const [n, d] = token.split("/"); val = Number(n) / Number(d); }
+  else val = Number(token);
+  const scaled = val * ratio;
+  const pretty = Number.isInteger(scaled) ? String(scaled) : String(Math.round(scaled * 100) / 100);
+  return (pretty + s.slice(token.length)).trim();
+}
+
 // ─── RECIPE DETAIL ────────────────────────────────────────────────────
 function RecipeDetailPage({ navigate, recipeId }: { navigate: (p: Page, id?: string) => void; recipeId: string | null }) {
   const { saved, toggle } = useSaved();
@@ -909,7 +926,7 @@ function RecipeDetailPage({ navigate, recipeId }: { navigate: (p: Page, id?: str
     { label: "Carbs", value: Math.round(64 * servings / base), unit: "g", bg: "bg-yellow-50", text: "text-yellow-700" },
     { label: "Fat", value: Math.round(16 * servings / base), unit: "g", bg: "bg-green-50", text: "text-green-700" },
   ];
-  const ingredients = recipe.ingredients.map(i => `${i.quantity} ${i.unit} ${i.name}`.replace(/\s+/g, " ").trim());
+  const ingredients = recipe.ingredients.map(i => `${scaleQty(i.quantity, servings / base)} ${i.unit} ${i.name}`.replace(/\s+/g, " ").trim());
   const steps = recipe.steps.map(s => s.instruction);
 
   return (
